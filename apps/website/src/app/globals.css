@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Oswald", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+
+  --navy: #0d2438;
+  --copper: #b06a34;
+  --parchment: #f3e9d2;
+}
+
+@layer base {
+  body {
+    @apply bg-parchment text-ink font-body antialiased;
+    /* Subtle paper grain built from layered gradients — no external asset. */
+    background-image:
+      radial-gradient(1200px 600px at 15% -10%, rgba(176, 106, 52, 0.06), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(47, 125, 120, 0.06), transparent 55%),
+      radial-gradient(900px 900px at 50% 120%, rgba(13, 36, 56, 0.05), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, .display {
+    @apply font-display uppercase tracking-tight;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-5 py-3 text-sm font-semibold uppercase tracking-wide transition-colors;
+  }
+  .btn-copper {
+    @apply btn bg-copper text-parchment hover:bg-copper-300;
+  }
+  .btn-navy {
+    @apply btn bg-navy text-parchment hover:bg-navy-700;
+  }
+  .btn-outline {
+    @apply btn border border-navy/30 text-navy hover:bg-navy hover:text-parchment;
+  }
+
+  .card {
+    @apply rounded-xl border border-navy/10 bg-parchment/70 shadow-crest backdrop-blur;
+  }
+
+  .eyebrow {
+    @apply font-display text-xs font-semibold uppercase tracking-[0.25em] text-copper;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full border border-navy/20 bg-parchment px-3 py-1 text-xs font-medium text-navy;
+  }
+}

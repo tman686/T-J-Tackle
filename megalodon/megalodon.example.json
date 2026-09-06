@@ -1,0 +1,18 @@
+{
+  "prefer_backend": null,
+  "cogniprime": {
+    "endpoint": "http://127.0.0.1:11434",
+    "token": "",
+    "model": "",
+    "timeout": 30.0,
+    "node_name": "megalodon"
+  },
+  "fleet": {
+    "connect_timeout": 10,
+    "hosts": [
+      { "name": "ubuntu", "hostname": "192.168.1.20", "user": "tj", "shell": "bash" },
+      { "name": "kali",   "hostname": "192.168.1.21", "user": "kali", "shell": "bash" },
+      { "name": "windows","hostname": "192.168.1.22", "user": "tj", "shell": "powershell" }
+    ]
+  }
+}
