@@ -30,3 +30,6 @@ services:
       # Optional — signups are logged if unset. Set as a secret in Render.
       - key: NEWSLETTER_WEBHOOK_URL
         sync: false
+      # Welcome discount code shown to new subscribers (defaults to CREW10 if unset).
+      - key: NEWSLETTER_WELCOME_CODE
+        sync: false

@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Status = "idle" | "loading" | "done" | "error";
+
+const STORE_KEY = "tj_subscribed";
+const CODE_KEY = "tj_welcome_code";
 
 /**
  * "Join the crew" email capture. The single most effective growth asset for a
  * small tackle brand: an owned audience to launch limited color drops to and
  * bring back for repeat orders. Posts to /api/subscribe.
+ *
+ * On success it reveals the welcome discount code (returned by the API) with a
+ * one-tap copy button so the incentive is immediately usable, and remembers the
+ * subscriber so repeat visitors see their code instead of the form again.
  *
  * `variant="panel"` is the full hero card (home page); `variant="inline"` is a
  * compact row for the footer.
@@ -22,6 +29,20 @@ export function EmailCapture({
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+  const [code, setCode] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  // Returning subscriber: show their code instead of the form.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(STORE_KEY) === "1") {
+        setCode(localStorage.getItem(CODE_KEY) || "");
+        setStatus("done");
+      }
+    } catch {
+      /* ignore storage errors */
+    }
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,8 +58,10 @@ export function EmailCapture({
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.ok) {
         setStatus("done");
+        if (data.code) setCode(data.code);
         try {
-          localStorage.setItem("tj_subscribed", "1");
+          localStorage.setItem(STORE_KEY, "1");
+          if (data.code) localStorage.setItem(CODE_KEY, data.code);
         } catch {
           /* ignore storage errors */
         }
@@ -52,20 +75,35 @@ export function EmailCapture({
     }
   }
 
+  async function copyCode() {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard unavailable — the code is shown for manual copy */
+    }
+  }
+
   const done = status === "done";
 
   if (variant === "inline") {
     return (
-      <form onSubmit={submit} className="w-full">
+      <div className="w-full">
         <label htmlFor="footer-email" className="text-sm text-copper-200">
           Get first dibs on new drops
         </label>
         {done ? (
           <p className="mt-2 text-sm text-parchment/90">
-            You&apos;re on the list — check your inbox. 🎣
+            You&apos;re on the list — {code ? (
+              <>use code <span className="font-semibold text-copper-200">{code}</span> for 10% off. 🎣</>
+            ) : (
+              <>check your inbox. 🎣</>
+            )}
           </p>
         ) : (
-          <div className="mt-2 flex gap-2">
+          <form onSubmit={submit} className="mt-2 flex gap-2">
             <input
               id="footer-email"
               type="email"
@@ -82,10 +120,10 @@ export function EmailCapture({
             >
               {status === "loading" ? "…" : "Join"}
             </button>
-          </div>
+          </form>
         )}
         {status === "error" && <p className="mt-2 text-xs text-copper-200">{message}</p>}
-      </form>
+      </div>
     );
   }
 
@@ -105,10 +143,32 @@ export function EmailCapture({
           {done ? (
             <div className="mx-auto mt-8 max-w-md rounded-xl border border-copper/30 bg-copper/5 p-6">
               <p className="font-display text-2xl uppercase text-navy">You&apos;re in. 🎣</p>
-              <p className="mt-2 text-sm text-ink/70">
-                Your discount code is on its way to your inbox. Check spam if you
-                don&apos;t see it in a minute.
-              </p>
+              {code ? (
+                <>
+                  <p className="mt-2 text-sm text-ink/70">
+                    Here&apos;s your 10%-off code — use it at checkout:
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyCode}
+                    className="group mt-3 inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-copper bg-white px-5 py-3 font-display text-2xl uppercase tracking-widest text-navy transition-colors hover:bg-copper/10"
+                    aria-label={`Copy discount code ${code}`}
+                  >
+                    {code}
+                    <span className="text-xs font-body normal-case tracking-normal text-copper">
+                      {copied ? "Copied!" : "Tap to copy"}
+                    </span>
+                  </button>
+                  <p className="mt-3 text-xs text-ink/50">
+                    We&apos;ll email the drops and tips to the address you signed up with.
+                  </p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-ink/70">
+                  Your discount code is on its way to your inbox. Check spam if you
+                  don&apos;t see it in a minute.
+                </p>
+              )}
             </div>
           ) : (
             <form

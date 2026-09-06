@@ -53,6 +53,7 @@ export async function POST(request: Request) {
   }
   recent.set(email, now);
 
+  const welcomeCode = process.env.NEWSLETTER_WELCOME_CODE || "CREW10";
   const webhook = process.env.NEWSLETTER_WEBHOOK_URL;
   if (webhook) {
     try {
@@ -85,5 +86,5 @@ export async function POST(request: Request) {
     console.log(`[subscribe] new signup (no provider configured): ${email} (${source})`);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, code: welcomeCode });
 }

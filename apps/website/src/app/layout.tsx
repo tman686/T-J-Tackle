@@ -39,7 +39,13 @@ export const metadata: Metadata = {
     description:
       "Original soft-plastic lures for freshwater & saltwater. Manufactured, not resold. Est. 2023.",
     type: "website",
-    images: ["/brand/tj-tackle-logo.png"],
+    // Social share image is provided by the file-based src/app/opengraph-image.png.
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "T&J's Tackle — Original Soft-Plastic Fishing Lures",
+    description:
+      "Original soft-plastic lures for freshwater & saltwater. Manufactured, not resold. Est. 2023.",
   },
 };
 
