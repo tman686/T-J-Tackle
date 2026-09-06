@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { EmailCapture } from "@/components/EmailCapture";
 
 const columns = [
   {
@@ -45,6 +46,9 @@ export function SiteFooter() {
             Original soft-plastic lures for freshwater &amp; saltwater. Designed,
             molded, and poured in-house. Est. 2023.
           </p>
+          <div className="mt-6 max-w-xs">
+            <EmailCapture variant="inline" source="footer" />
+          </div>
         </div>
 
         {columns.map((col) => (

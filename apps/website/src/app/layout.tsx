@@ -48,9 +48,37 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const orgJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "T&J's Tackle",
+    url: "https://jttackle.com",
+    logo: "https://jttackle.com/brand/tj-tackle-logo.png",
+    description:
+      "Original soft-plastic fishing lures for freshwater and saltwater. Designed, molded, and poured in-house. Est. 2023.",
+    foundingDate: "2023",
+    slogan: "Original soft plastics, engineered for the bite.",
+  };
+
+  const siteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "T&J's Tackle",
+    url: "https://jttackle.com",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://jttackle.com/soft-plastics?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <html lang="en" className={`${oswald.variable} ${inter.variable}`}>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify([orgJsonLd, siteJsonLd]) }}
+        />
         <SiteHeader />
         <main>{children}</main>
         <SiteFooter />

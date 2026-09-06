@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { lures, families } from "@/data/lures";
 import { LureCard } from "@/components/LureCard";
+import { EmailCapture } from "@/components/EmailCapture";
 
 export default function HomePage() {
   const featured = lures.slice(0, 3);
@@ -115,6 +116,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Email capture */}
+      <EmailCapture source="home" />
 
       {/* Dealer CTA */}
       <section className="container-page pb-10">
