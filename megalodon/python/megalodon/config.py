@@ -16,14 +16,17 @@ from typing import Optional
 
 @dataclass
 class CogniPrimeConfig:
-    # Base URL of your local CogniPrime instance, e.g. "http://127.0.0.1:8080".
-    # Empty means "not configured" → the client runs in offline mode.
-    endpoint: str = ""
+    # Base URL of your local CogniPrime (Ollama-compatible) instance. Defaults to
+    # Ollama's standard local address. Blank it to force OFFLINE mode.
+    endpoint: str = "http://127.0.0.1:11434"
     # Optional bearer token your CogniPrime instance expects.
     token: str = ""
+    # Default model name to use when a call doesn't specify one. Empty = auto-pick
+    # the first model CogniPrime reports from /api/tags.
+    model: str = ""
     # Request timeout, seconds.
-    timeout: float = 5.0
-    # Logical name this Megalodon node reports to CogniPrime.
+    timeout: float = 30.0
+    # Logical name for this Megalodon node.
     node_name: str = "megalodon"
 
 
@@ -51,9 +54,10 @@ def load_config() -> Config:
     cfg = Config()
     cfg.prefer_backend = os.environ.get("MEGALODON_BACKEND", data.get("prefer_backend")) or None
     cfg.cogniprime = CogniPrimeConfig(
-        endpoint=os.environ.get("COGNIPRIME_ENDPOINT", cp.get("endpoint", "")),
+        endpoint=os.environ.get("COGNIPRIME_ENDPOINT", cp.get("endpoint", "http://127.0.0.1:11434")),
         token=os.environ.get("COGNIPRIME_TOKEN", cp.get("token", "")),
-        timeout=float(os.environ.get("COGNIPRIME_TIMEOUT", cp.get("timeout", 5.0))),
+        model=os.environ.get("COGNIPRIME_MODEL", cp.get("model", "")),
+        timeout=float(os.environ.get("COGNIPRIME_TIMEOUT", cp.get("timeout", 30.0))),
         node_name=os.environ.get("MEGALODON_NODE_NAME", cp.get("node_name", "megalodon")),
     )
     return cfg

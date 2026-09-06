@@ -1,7 +1,7 @@
 # Megalodon
 
-A Python application over a compiled **C++ core**, with a pluggable
-**CogniPrime** integration. Megalodon implements the classic native-extension
+A Python application over a compiled **C++ core**, wired to **CogniPrime** — an
+Ollama-compatible local LLM server — over its local HTTP API. Megalodon implements the classic native-extension
 dependency stack — Python drives high-level logic, the heavy/low-level work runs
 in a compiled C++ shared library, and the two meet at a bridge layer that
 supports **both** binding styles.
@@ -27,7 +27,7 @@ supports **both** binding styles.
 
 [ Main Python Application ]
  └── CogniPrime client                 python/megalodon/cogniprime.py
-      └── your local CogniPrime instance (configured, opt-in — offline until set up)
+      └── your local CogniPrime server (Ollama-compatible HTTP API @ 127.0.0.1:11434)
 ```
 
 The bridge prefers the pybind11 native module when it is compiled, and
@@ -54,13 +54,14 @@ cd megalodon
 ## Run
 
 ```bash
-PYTHONPATH=python python3 -m megalodon --status
-PYTHONPATH=python python3 -m megalodon compute 12 8 5 9 14
-PYTHONPATH=python python3 -m megalodon connect        # register with CogniPrime
+PYTHONPATH=python python3 -m megalodon --status                 # stack + CogniPrime status/models
+PYTHONPATH=python python3 -m megalodon compute 12 8 5 9 14      # run the C++ core
+PYTHONPATH=python python3 -m megalodon connect                  # verify CogniPrime + list models
+PYTHONPATH=python python3 -m megalodon ask "Best soft-plastic color for stained water?"
 ```
 
-`--status` reports which backend loaded (`ctypes` or `pybind11`) and whether
-CogniPrime is reachable.
+`--status` reports which backend loaded (`ctypes` or `pybind11`), whether
+CogniPrime is reachable, and which models it is serving.
 
 ## Test
 
@@ -71,22 +72,31 @@ MEGALODON_BACKEND=pybind11 python3 -m pytest tests -q   # same suite, native mod
 
 ## Connecting to CogniPrime
 
-The CogniPrime client (`python/megalodon/cogniprime.py`) is **opt-in and
-transparent**:
+CogniPrime is an **Ollama-compatible local LLM server**, so the client
+(`python/megalodon/cogniprime.py`) speaks that HTTP API:
 
-- It talks **only** to the endpoint you configure. Until then it is in
-  **offline** mode: every call is a logged local no-op and nothing leaves the
-  machine.
-- Configure it when you set CogniPrime up, via environment variables:
+| Call | Route |
+| --- | --- |
+| `list_models()` / health probe | `GET /api/tags` |
+| `generate(prompt, model)` | `POST /api/generate` |
+| `chat(messages, model)` | `POST /api/chat` |
+
+- The endpoint defaults to Ollama's standard local address
+  `http://127.0.0.1:11434`, so once CogniPrime is running on your machine
+  Megalodon connects with no extra setup.
+- Override anything via environment variables:
   ```bash
-  export COGNIPRIME_ENDPOINT="http://127.0.0.1:8080"
-  export COGNIPRIME_TOKEN="your-token"      # optional
+  export COGNIPRIME_ENDPOINT="http://127.0.0.1:11434"   # where CogniPrime listens
+  export COGNIPRIME_MODEL="llama3.2"                     # optional; else first available
+  export COGNIPRIME_TOKEN="your-token"                  # optional
   ```
   or copy `megalodon.example.json` → `megalodon.json` and fill it in
-  (`megalodon.json` is git-ignored so your local settings stay out of the repo).
-- It assumes a minimal JSON/HTTP protocol: `GET /health`, `POST /v1/register`,
-  `POST /v1/events`. If your CogniPrime speaks something else (a Unix socket,
-  gRPC, a queue), that one file is the only thing to adapt.
+  (`megalodon.json` is git-ignored, so local settings stay out of the repo).
+- **Offline safety:** blank the endpoint and the client goes offline — every
+  call is a logged local no-op and nothing leaves the machine.
+- If your CogniPrime remake diverges from the Ollama API, `cogniprime.py` is the
+  single file to adapt; nothing else in Megalodon changes.
+
 
 ## Layout
 

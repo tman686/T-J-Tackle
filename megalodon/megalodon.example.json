@@ -1,9 +1,10 @@
 {
   "prefer_backend": null,
   "cogniprime": {
-    "endpoint": "",
+    "endpoint": "http://127.0.0.1:11434",
     "token": "",
-    "timeout": 5.0,
+    "model": "",
+    "timeout": 30.0,
     "node_name": "megalodon"
   }
 }

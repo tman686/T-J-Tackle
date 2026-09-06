@@ -1,18 +1,20 @@
 """CogniPrime integration client.
 
-This is the bridge from Megalodon to a CogniPrime instance running on your
-machine. It is deliberately simple and transparent:
+CogniPrime is an Ollama-compatible local LLM server (a remake of Ollama). This
+client speaks that HTTP API so Megalodon can list models and run prompts against
+whatever CogniPrime is serving on your machine.
 
-  * It only talks to the endpoint you put in config (COGNIPRIME_ENDPOINT or
-    megalodon.json). Until you set that up, the client is in OFFLINE mode and
-    every call is a local no-op that is logged — nothing leaves the machine.
-  * It uses only the Python standard library (urllib) over plain HTTP(S).
-  * Every request is logged at INFO so you can see exactly what is sent.
+Design principles (unchanged):
+  * Talks ONLY to the endpoint you configure. Default is Ollama's local address
+    (http://127.0.0.1:11434); override with COGNIPRIME_ENDPOINT. If you blank the
+    endpoint it goes OFFLINE — every call is a logged local no-op, nothing leaves
+    the machine.
+  * Standard library only (urllib). Every request is logged at INFO.
 
-The protocol assumed here is a minimal JSON/HTTP one (GET /health,
-POST /v1/register, POST /v1/events). If your CogniPrime setup speaks something
-different (a Unix socket, gRPC, a message queue), tell me the shape and this is
-the single file to adapt — nothing else in Megalodon changes.
+Ollama-compatible routes used:
+    GET  /api/tags        -> list installed models (also used as a health probe)
+    POST /api/generate    -> single-prompt completion  {model, prompt, stream:false}
+    POST /api/chat        -> chat completion            {model, messages, stream:false}
 """
 from __future__ import annotations
 
@@ -20,7 +22,7 @@ import json
 import logging
 import urllib.error
 import urllib.request
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from .config import CogniPrimeConfig
 from .version import __version__
@@ -31,7 +33,6 @@ log = logging.getLogger("megalodon.cogniprime")
 class CogniPrimeClient:
     def __init__(self, config: CogniPrimeConfig) -> None:
         self.config = config
-        self._connected = False
 
     @property
     def offline(self) -> bool:
@@ -56,37 +57,66 @@ class CogniPrimeClient:
         except urllib.error.URLError as e:
             log.warning("CogniPrime request failed: %s", e)
             return None
+        except json.JSONDecodeError as e:
+            log.warning("CogniPrime returned non-JSON: %s", e)
+            return None
+
+    # --- Ollama-compatible surface ---
+
+    def list_models(self) -> List[str]:
+        """Names of models CogniPrime currently serves ([] if unreachable)."""
+        resp = self._request("GET", "/api/tags")
+        if not resp:
+            return []
+        return [m.get("name", "") for m in resp.get("models", []) if m.get("name")]
 
     def health(self) -> bool:
-        """Return True if the configured CogniPrime instance answers."""
+        """True if the configured CogniPrime instance answers."""
         if self.offline:
             return False
-        return self._request("GET", "/health") is not None
+        return self._request("GET", "/api/tags") is not None
+
+    def _resolve_model(self, model: Optional[str]) -> Optional[str]:
+        if model:
+            return model
+        if self.config.model:
+            return self.config.model
+        available = self.list_models()
+        return available[0] if available else None
+
+    def generate(self, prompt: str, model: Optional[str] = None) -> Optional[str]:
+        """Run a single-prompt completion; returns the text or None if offline/unreachable."""
+        if self.offline:
+            log.info("CogniPrime endpoint not configured — cannot generate (offline).")
+            return None
+        m = self._resolve_model(model)
+        if not m:
+            log.warning("No model available on CogniPrime to generate with.")
+            return None
+        resp = self._request("POST", "/api/generate", {"model": m, "prompt": prompt, "stream": False})
+        return resp.get("response") if resp else None
+
+    def chat(self, messages: List[Dict[str, str]], model: Optional[str] = None) -> Optional[str]:
+        """Run a chat completion over a list of {role, content} messages."""
+        if self.offline:
+            log.info("CogniPrime endpoint not configured — cannot chat (offline).")
+            return None
+        m = self._resolve_model(model)
+        if not m:
+            log.warning("No model available on CogniPrime to chat with.")
+            return None
+        resp = self._request("POST", "/api/chat", {"model": m, "messages": messages, "stream": False})
+        if not resp:
+            return None
+        return (resp.get("message") or {}).get("content")
 
     def connect(self) -> bool:
-        """Register this Megalodon node with CogniPrime. Safe to call repeatedly."""
+        """Verify CogniPrime is reachable and report the models it serves."""
         if self.offline:
             log.info("CogniPrime endpoint not configured — running standalone (offline).")
             return False
-        resp = self._request(
-            "POST",
-            "/v1/register",
-            {"node": self.config.node_name, "role": "megalodon-core", "version": __version__},
-        )
-        self._connected = resp is not None
-        if self._connected:
-            log.info("Registered '%s' with CogniPrime at %s", self.config.node_name, self.config.endpoint)
-        return self._connected
-
-    def send_event(self, kind: str, data: Dict[str, Any]) -> bool:
-        """Send one structured event to CogniPrime (e.g. a computed summary)."""
-        resp = self._request(
-            "POST",
-            "/v1/events",
-            {"node": self.config.node_name, "kind": kind, "data": data},
-        )
-        return resp is not None
-
-    @property
-    def connected(self) -> bool:
-        return self._connected
+        ok = self.health()
+        if ok:
+            log.info("Connected to CogniPrime at %s; models: %s",
+                     self.config.endpoint, ", ".join(self.list_models()) or "(none)")
+        return ok

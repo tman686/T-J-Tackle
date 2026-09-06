@@ -31,12 +31,14 @@ def _setup_logging(verbose: bool) -> None:
 def cmd_status(cfg) -> dict:
     backend = bridge.load_backend(cfg.prefer_backend)
     client = CogniPrimeClient(cfg.cogniprime)
+    online = client.health()
     return {
         "megalodon": __version__,
         "core_version": backend.version(),
         "backend": bridge.active_backend(),
-        "cogniprime_endpoint": cfg.cogniprime.endpoint or "(not configured)",
-        "cogniprime_online": client.health(),
+        "cogniprime_endpoint": cfg.cogniprime.endpoint or "(offline)",
+        "cogniprime_online": online,
+        "cogniprime_models": client.list_models() if online else [],
     }
 
 
@@ -46,11 +48,6 @@ def cmd_compute(cfg, numbers: List[float]) -> dict:
         summary = eng.summary()
     summary["ema_forecast"] = core.forecast_ema(numbers, alpha=0.5)
     summary["fingerprint"] = core.fingerprint(",".join(str(n) for n in numbers))
-
-    # If CogniPrime is set up, forward the computed summary to it.
-    client = CogniPrimeClient(cfg.cogniprime)
-    client.connect()
-    summary["forwarded_to_cogniprime"] = client.send_event("compute.summary", summary)
     return summary
 
 
@@ -60,7 +57,21 @@ def cmd_connect(cfg) -> dict:
     return {
         "configured": not client.offline,
         "connected": ok,
-        "endpoint": cfg.cogniprime.endpoint or "(not configured)",
+        "endpoint": cfg.cogniprime.endpoint or "(offline)",
+        "models": client.list_models() if ok else [],
+    }
+
+
+def cmd_ask(cfg, prompt: str, model) -> dict:
+    """Run a prompt against the model CogniPrime is serving."""
+    client = CogniPrimeClient(cfg.cogniprime)
+    answer = client.generate(prompt, model=model)
+    return {
+        "endpoint": cfg.cogniprime.endpoint or "(offline)",
+        "model": model or cfg.cogniprime.model or "(auto)",
+        "prompt": prompt,
+        "response": answer,
+        "ok": answer is not None,
     }
 
 
@@ -74,7 +85,11 @@ def main(argv=None) -> int:
     p_compute = sub.add_parser("compute", help="run the C++ core over numbers")
     p_compute.add_argument("numbers", nargs="+", type=float)
 
-    sub.add_parser("connect", help="register this node with CogniPrime")
+    sub.add_parser("connect", help="verify the connection to CogniPrime and list its models")
+
+    p_ask = sub.add_parser("ask", help="run a prompt against CogniPrime's model")
+    p_ask.add_argument("prompt")
+    p_ask.add_argument("--model", default=None, help="model name (default: config, else auto)")
 
     args = parser.parse_args(argv)
     _setup_logging(args.verbose)
@@ -87,6 +102,8 @@ def main(argv=None) -> int:
             result = cmd_compute(cfg, args.numbers)
         elif args.command == "connect":
             result = cmd_connect(cfg)
+        elif args.command == "ask":
+            result = cmd_ask(cfg, args.prompt, args.model)
         else:
             parser.print_help()
             return 2
