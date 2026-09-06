@@ -1,0 +1,9 @@
+{
+  "prefer_backend": null,
+  "cogniprime": {
+    "endpoint": "",
+    "token": "",
+    "timeout": 5.0,
+    "node_name": "megalodon"
+  }
+}

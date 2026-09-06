@@ -1,0 +1,14 @@
+# Build artifacts (platform-specific — rebuild with `make` / build scripts)
+build/
+*.so
+*.dylib
+*.dll
+*.o
+*.obj
+*.pyd
+*.egg-info/
+__pycache__/
+.pytest_cache/
+# Local secrets / machine config
+megalodon.json
+.env
