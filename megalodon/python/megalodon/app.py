@@ -18,6 +18,7 @@ from typing import List
 from . import bridge, core
 from .cogniprime import CogniPrimeClient
 from .config import load_config
+from .fleet import Fleet
 from .version import __version__
 
 
@@ -75,6 +76,37 @@ def cmd_ask(cfg, prompt: str, model) -> dict:
     }
 
 
+def cmd_hosts(cfg) -> dict:
+    fleet = Fleet(cfg.fleet)
+    return {
+        "hosts": [
+            {"name": h.name, "target": f"{h.user}@{h.hostname}:{h.port}", "shell": h.shell, "enabled": h.enabled}
+            for h in fleet.hosts(include_disabled=True)
+        ]
+    }
+
+
+def cmd_check(cfg, name) -> dict:
+    fleet = Fleet(cfg.fleet)
+    hosts = [fleet.get(name)] if name else fleet.hosts()
+    if name and hosts[0] is None:
+        return {"error": f"no host named '{name}' in config"}
+    return {"results": [fleet.check(h).as_dict() for h in hosts if h]}
+
+
+def cmd_run_on(cfg, name, command) -> dict:
+    fleet = Fleet(cfg.fleet)
+    host = fleet.get(name)
+    if host is None:
+        return {"error": f"no host named '{name}' in config"}
+    return fleet.run(host, command).as_dict()
+
+
+def cmd_run_all(cfg, command) -> dict:
+    fleet = Fleet(cfg.fleet)
+    return {"results": [r.as_dict() for r in fleet.run_all(command)]}
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = argparse.ArgumentParser(prog="megalodon", description="Megalodon C++/Python core with CogniPrime integration.")
@@ -91,6 +123,19 @@ def main(argv=None) -> int:
     p_ask.add_argument("prompt")
     p_ask.add_argument("--model", default=None, help="model name (default: config, else auto)")
 
+    # --- Fleet (SSH) commands: administer your own machines over OpenSSH ---
+    sub.add_parser("hosts", help="list configured SSH hosts")
+
+    p_check = sub.add_parser("check", help="test SSH connectivity (one host, or all)")
+    p_check.add_argument("host", nargs="?", default=None)
+
+    p_ron = sub.add_parser("run-on", help="run a command on one SSH host")
+    p_ron.add_argument("host")
+    p_ron.add_argument("remote_command", metavar="command")
+
+    p_rall = sub.add_parser("run-all", help="run a command on every enabled SSH host")
+    p_rall.add_argument("remote_command", metavar="command")
+
     args = parser.parse_args(argv)
     _setup_logging(args.verbose)
     cfg = load_config()
@@ -104,6 +149,14 @@ def main(argv=None) -> int:
             result = cmd_connect(cfg)
         elif args.command == "ask":
             result = cmd_ask(cfg, args.prompt, args.model)
+        elif args.command == "hosts":
+            result = cmd_hosts(cfg)
+        elif args.command == "check":
+            result = cmd_check(cfg, args.host)
+        elif args.command == "run-on":
+            result = cmd_run_on(cfg, args.host, args.remote_command)
+        elif args.command == "run-all":
+            result = cmd_run_all(cfg, args.remote_command)
         else:
             parser.print_help()
             return 2

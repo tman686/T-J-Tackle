@@ -97,6 +97,47 @@ CogniPrime is an **Ollama-compatible local LLM server**, so the client
 - If your CogniPrime remake diverges from the Ollama API, `cogniprime.py` is the
   single file to adapt; nothing else in Megalodon changes.
 
+## Fleet — running commands on your own machines (SSH)
+
+Megalodon can drive **your own** machines (Ubuntu, Kali, Windows-with-OpenSSH)
+from one place, using the standard OpenSSH client. `python/megalodon/fleet.py`
+just shells out to `ssh` — there is no custom agent, protocol, persistence, or
+concealment; everything it runs is logged and is exactly what you could type by
+hand.
+
+**Setup** — key-based auth is required (the client passes `BatchMode=yes`, so it
+never prompts for or stores a password):
+```bash
+ssh-keygen -t ed25519                      # once, if you don't have a key
+ssh-copy-id tj@192.168.1.20                # authorize your key on each machine
+```
+For Windows targets, install the **OpenSSH Server** optional feature and set the
+host's `"shell": "powershell"` so commands run in PowerShell.
+
+**Configure** hosts in `megalodon.json` (copy from `megalodon.example.json`; it's
+git-ignored, so your inventory stays local):
+```json
+"fleet": {
+  "hosts": [
+    { "name": "ubuntu",  "hostname": "192.168.1.20", "user": "tj",   "shell": "bash" },
+    { "name": "kali",    "hostname": "192.168.1.21", "user": "kali", "shell": "bash" },
+    { "name": "windows", "hostname": "192.168.1.22", "user": "tj",   "shell": "powershell" }
+  ]
+}
+```
+
+**Use**:
+```bash
+PYTHONPATH=python python3 -m megalodon hosts                 # list configured hosts
+PYTHONPATH=python python3 -m megalodon check                 # test SSH to all of them
+PYTHONPATH=python python3 -m megalodon run-on kali "uname -a"
+PYTHONPATH=python python3 -m megalodon run-all "uptime"      # every enabled host
+```
+
+Security notes: host-key checking is left at OpenSSH defaults (your
+`~/.ssh/known_hosts` governs — the client does not weaken it), commands are
+passed to `subprocess` as an argument list (never through a local shell), and an
+unreachable or unauthorized host returns a clean error result instead of hanging.
 
 ## Layout
 
@@ -107,6 +148,7 @@ CogniPrime is an **Ollama-compatible local LLM server**, so the client
 | `cpp/src/py_bindings.cpp` | pybind11 wrappers (OPTION B) |
 | `python/megalodon/bridge.py` | Backend loader / bridge layer |
 | `python/megalodon/core.py` | High-level Python API |
-| `python/megalodon/cogniprime.py` | CogniPrime integration client |
+| `python/megalodon/cogniprime.py` | CogniPrime (Ollama) integration client |
+| `python/megalodon/fleet.py` | SSH fleet control over the standard OpenSSH client |
 | `python/megalodon/app.py` | Main application + CLI |
 | `tests/` | Suite that runs against either backend |

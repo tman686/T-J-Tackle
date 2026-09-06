@@ -9,6 +9,7 @@ from .version import __version__
 from . import core, bridge
 from .core import Engine, version, fingerprint, total, mean, forecast_ema
 from .cogniprime import CogniPrimeClient
+from .fleet import Fleet
 from .config import load_config
 
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     "mean",
     "forecast_ema",
     "CogniPrimeClient",
+    "Fleet",
     "load_config",
 ]

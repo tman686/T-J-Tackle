@@ -11,7 +11,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -31,9 +31,49 @@ class CogniPrimeConfig:
 
 
 @dataclass
+class SSHHost:
+    """One machine you administer over standard OpenSSH (key-based auth)."""
+    name: str                       # friendly label, e.g. "kali"
+    hostname: str                   # IP or DNS name
+    user: str = "root"
+    port: int = 22
+    key: str = ""                   # path to a private key; "" uses ssh-agent / ~/.ssh/config
+    shell: str = "bash"             # "bash" for Linux, "powershell" for Windows OpenSSH
+    enabled: bool = True
+
+
+@dataclass
+class FleetConfig:
+    # Fail fast instead of hanging on a prompt: OpenSSH BatchMode + a connect timeout.
+    connect_timeout: int = 10
+    hosts: List[SSHHost] = field(default_factory=list)
+
+
+@dataclass
 class Config:
     prefer_backend: Optional[str] = None  # None | "ctypes" | "pybind11"
     cogniprime: CogniPrimeConfig = field(default_factory=CogniPrimeConfig)
+    fleet: FleetConfig = field(default_factory=FleetConfig)
+
+
+def _parse_fleet(data: dict) -> FleetConfig:
+    f = data.get("fleet", {}) if isinstance(data, dict) else {}
+    hosts = []
+    for h in f.get("hosts", []):
+        if not h.get("name") or not h.get("hostname"):
+            continue
+        hosts.append(
+            SSHHost(
+                name=str(h["name"]),
+                hostname=str(h["hostname"]),
+                user=str(h.get("user", "root")),
+                port=int(h.get("port", 22)),
+                key=str(h.get("key", "")),
+                shell=str(h.get("shell", "bash")),
+                enabled=bool(h.get("enabled", True)),
+            )
+        )
+    return FleetConfig(connect_timeout=int(f.get("connect_timeout", 10)), hosts=hosts)
 
 
 def _load_file() -> dict:
@@ -60,4 +100,5 @@ def load_config() -> Config:
         timeout=float(os.environ.get("COGNIPRIME_TIMEOUT", cp.get("timeout", 30.0))),
         node_name=os.environ.get("MEGALODON_NODE_NAME", cp.get("node_name", "megalodon")),
     )
+    cfg.fleet = _parse_fleet(data if isinstance(data, dict) else {})
     return cfg
