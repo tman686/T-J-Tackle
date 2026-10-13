@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/ContactForm";
-import { ORDER_EMAIL } from "@/lib/contact";
+import { ORDER_EMAIL, ORDER_PHONE } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -27,6 +27,14 @@ export default function ContactPage() {
               <dd className="text-ink/70">
                 <a className="text-copper hover:underline" href={`mailto:${ORDER_EMAIL}`}>
                   {ORDER_EMAIL}
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-navy font-semibold">Call or text</dt>
+              <dd className="text-ink/70">
+                <a className="text-copper hover:underline" href={`tel:+1${ORDER_PHONE.replace(/\D/g, "")}`}>
+                  {ORDER_PHONE}
                 </a>
               </dd>
             </div>

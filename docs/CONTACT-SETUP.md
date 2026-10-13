@@ -4,44 +4,54 @@ Everything a buyer can tap — the website, the business cards, the QR codes, th
 saved contact — points at **one address**. Nothing is scattered across your
 other accounts.
 
-## The one address
+## The one address and number
 
 ```
-gilbertsenthomas00+orders@gmail.com
+gilbertsenthomas00@gmail.com
+863-812-6504
 ```
 
-That is your normal Gmail with `+orders` on the end. Google ignores everything
-from the `+` onward when it delivers, so **it lands in the inbox you already
-read** — no new account, no password, no forwarding to set up. The tag is there
-so Gmail can spot business mail and file it for you (next section).
+Both are on the website, on the business cards, in the QR codes and in the
+saved-contact file. A buyer can email, text or call, and it all reaches you in
+one place.
 
-### When you want a cleaner address
-
-`tjstackle@gmail.com` looks better on a card than the `+orders` one. When you
-create it:
+### Changing either of them later
 
 1. Open `brand/contact.json`
-2. Change `orderEmail` **and** `orderEmailLabel` to the new address
+2. Edit `orderEmail` / `orderEmailLabel` / `phone`
 3. Run `python3 scripts/build-contact.py`
 
-That one change rewrites the website, the business cards, the QR codes and the
-saved-contact file together, so they can never drift apart. Add your phone
-number in `phone` at the same time and a "Call or text" row appears on the site
-and a Call line on the cards — leave it blank and they're simply left off.
+That one change rewrites the website, the business cards, the QR codes, the
+saved contact and the web app together, so they can never drift apart. Leave
+`phone` blank and the Text and Call rows simply disappear everywhere.
 
-## Make Gmail file it all under one label (2 minutes, on a phone or computer)
+## Make Gmail file the business mail separately (2 minutes)
+
+Because orders come to your normal address, the filter keys off the **subject**
+instead of the address. Every message the website generates starts its subject
+with `T&J's Tackle`, so this catches all of them:
 
 1. Gmail → search bar → **Show search options** (the sliders icon on the right)
-2. In **To**, type `gilbertsenthomas00+orders@gmail.com`
+2. In **Subject**, type:  `T&J's Tackle`
 3. **Create filter** → tick:
    - **Apply the label** → *New label…* → `T&J Orders`
    - **Never send it to Spam**
    - **Always mark it as important**
 4. **Create filter**
 
-Every order, wholesale request and question now stacks up under **T&J Orders**
-in the sidebar. Nothing mixes with personal mail, and you can hand someone the
-phone without them scrolling your inbox.
+Every order, wholesale request and question from the site now stacks up under
+**T&J Orders** in the sidebar, separate from personal mail.
+
+> Someone who finds your address on a card and writes their own subject line
+> won't match the filter — that mail lands in the normal inbox. To catch those
+> too, make a second filter with **Has the words**: `tackle OR baits OR lures
+> OR wholesale` and the same label.
+
+### Texts
+
+Save yourself a contact in your phone named **T&J's Tackle Orders** and, when a
+buyer texts about baits, it's obvious what the thread is. On iPhone you can also
+pin those threads to the top of Messages.
 
 ## A signature that sells
 
@@ -53,7 +63,7 @@ T&J's Tackle — Owner / Bait Maker
 Original soft & hard baits · Freshwater & Saltwater
 
 Shop the catalog: https://tman686.github.io/T-J-Tackle/
-Orders: gilbertsenthomas00+orders@gmail.com
+Orders: gilbertsenthomas00@gmail.com · 863-812-6504
 ```
 
 Set it for **New emails** *and* **On reply/forward**, then **Save Changes** at
@@ -75,6 +85,8 @@ change the numbers → Send.
 | Where | What they tap | What happens |
 |---|---|---|
 | Website | **Email — fastest** | New email to you, subject already filled in |
+| Website | **Text me — quickest** | Opens a text to 863-812-6504, first line written |
+| Website | **Call** | Dials 863-812-6504 |
 | Website | **Build an order request** | Opens an email with name, baits, quantities and notes written out |
 | Website | **Copy my email** | Address on their clipboard |
 | Website | **Save my contact** | Downloads the vCard, saves you into their phone |

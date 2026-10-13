@@ -3,15 +3,12 @@
   "tagline": "Original Soft & Hard Baits · Freshwater & Saltwater",
   "owner": "Thomas Gilbertsen",
   "title": "Owner / Bait Maker",
-
-  "orderEmail": "gilbertsenthomas00+orders@gmail.com",
-  "orderEmailLabel": "gilbertsenthomas00+orders@gmail.com",
-
-  "phone": "",
+  "orderEmail": "gilbertsenthomas00@gmail.com",
+  "orderEmailLabel": "gilbertsenthomas00@gmail.com",
+  "phone": "863-812-6504",
   "instagram": "",
   "site": "https://tman686.github.io/T-J-Tackle/",
   "siteLabel": "tman686.github.io/T-J-Tackle",
   "city": "",
-
-  "_README": "orderEmail is THE one inbox every buyer message lands in. Change it in this file ONLY, then run: python3 scripts/build-contact.py  — that regenerates the QR codes, the vCard, the business cards, and the contact section of site/index.html."
+  "_README": "orderEmail + phone are what every buyer sees. Change them HERE only, then run: python3 scripts/build-contact.py  — that regenerates the QR codes, the vCard, the business cards, the storefront contact section and the web app constants together."
 }

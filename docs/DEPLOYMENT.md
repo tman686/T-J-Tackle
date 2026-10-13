@@ -52,7 +52,7 @@ The repo ships a Blueprint at [`render.yaml`](../render.yaml).
 
 ### Custom domain
 
-Render → service → *Settings → Custom Domains* → add `jttackle.com` and point
+Render → service → *Settings → Custom Domains* → add your domain (e.g. `tjstackle.com`) and point
 your DNS (CNAME) as instructed. Update the `metadataBase`/sitemap URLs in
 `apps/website/src/app/layout.tsx` and `sitemap.ts` to the live domain.
 

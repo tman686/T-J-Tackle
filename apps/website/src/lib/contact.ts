@@ -6,8 +6,8 @@
  */
 
 // BEGIN:CONTACT_TS
-export const ORDER_EMAIL = "gilbertsenthomas00+orders@gmail.com";
-export const ORDER_PHONE = "";
+export const ORDER_EMAIL = "gilbertsenthomas00@gmail.com";
+export const ORDER_PHONE = "863-812-6504";
 export const SITE_URL = "https://tman686.github.io/T-J-Tackle/";
 // END:CONTACT_TS
 
