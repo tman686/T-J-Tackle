@@ -1,0 +1,14 @@
+{
+  "company": "T&J's Tackle",
+  "tagline": "Original Soft & Hard Baits · Freshwater & Saltwater",
+  "owner": "Thomas Gilbertsen",
+  "title": "Owner / Bait Maker",
+  "orderEmail": "gilbertsenthomas00@gmail.com",
+  "orderEmailLabel": "gilbertsenthomas00@gmail.com",
+  "phone": "863-812-6504",
+  "instagram": "",
+  "site": "https://tman686.github.io/T-J-Tackle/",
+  "siteLabel": "tman686.github.io/T-J-Tackle",
+  "city": "",
+  "_README": "orderEmail + phone are what every buyer sees. Change them HERE only, then run: python3 scripts/build-contact.py  — that regenerates the QR codes, the vCard, the business cards, the storefront contact section and the web app constants together."
+}

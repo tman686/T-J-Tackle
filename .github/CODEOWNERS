@@ -1,0 +1,8 @@
+# Default owners for everything in the repo.
+# Update these handles to the real J & T Tackle GitHub team.
+*                       @tman686
+
+# Area owners
+/apps/website/          @tman686
+/packages/database/     @tman686
+/docs/                  @tman686

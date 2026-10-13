@@ -1,0 +1,60 @@
+import type { Metadata } from "next";
+import { Oswald, Inter } from "next/font/google";
+import "./globals.css";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+
+const oswald = Oswald({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://tman686.github.io/T-J-Tackle"),
+  title: {
+    default: "T&J's Tackle — Original Soft-Plastic Fishing Lures",
+    template: "%s · T&J's Tackle",
+  },
+  description:
+    "T&J's Tackle designs and manufactures original soft-plastic fishing lures for freshwater and saltwater. Built by anglers, engineered for the bite. Est. 2023.",
+  keywords: [
+    "soft plastic lures",
+    "fishing lures",
+    "bass lures",
+    "saltwater lures",
+    "T&J's Tackle",
+    "custom color plastics",
+  ],
+  openGraph: {
+    title: "T&J's Tackle — Original Soft-Plastic Fishing Lures",
+    description:
+      "Original soft-plastic lures for freshwater & saltwater. Manufactured, not resold. Est. 2023.",
+    type: "website",
+    images: ["/brand/tj-tackle-logo.png"],
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" className={`${oswald.variable} ${inter.variable}`}>
+      <body>
+        <SiteHeader />
+        <main>{children}</main>
+        <SiteFooter />
+      </body>
+    </html>
+  );
+}

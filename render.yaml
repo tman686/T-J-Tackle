@@ -1,0 +1,28 @@
+# Render Blueprint for J & T Tackle.
+# Deploy: push this repo to GitHub, then in Render → "New +" → "Blueprint",
+# pick this repo. Render reads this file and provisions the service below.
+# See docs/DEPLOYMENT.md for the full walkthrough (Supabase + Render).
+
+services:
+  - type: web
+    name: jt-tackle-website
+    runtime: node
+    plan: free
+    # Point this at whichever branch you deploy from (main once the PR merges).
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start --workspace @jt/website
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      # Supabase pooled connection string (port 6543, ?pgbouncer=true).
+      # Set as a secret in the Render dashboard — never commit it.
+      - key: DATABASE_URL
+        sync: false
+      # Supabase direct connection string (port 5432), used for migrations.
+      - key: DIRECT_URL
+        sync: false
