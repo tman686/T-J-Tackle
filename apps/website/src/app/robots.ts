@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://jttackle.com/sitemap.xml",
+    sitemap: "https://tman686.github.io/T-J-Tackle/sitemap.xml",
   };
 }

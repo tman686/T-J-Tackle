@@ -19,7 +19,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://jttackle.com"),
+  metadataBase: new URL("https://tman686.github.io/T-J-Tackle"),
   title: {
     default: "T&J's Tackle — Original Soft-Plastic Fishing Lures",
     template: "%s · T&J's Tackle",

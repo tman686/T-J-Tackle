@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { lures } from "@/data/lures";
 
-const BASE = "https://jttackle.com";
+const BASE = "https://tman686.github.io/T-J-Tackle";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [
