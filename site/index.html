@@ -352,28 +352,30 @@
           <h3>Order or ask a question</h3>
           <p style="color:var(--muted); font-size:14.5px;">Baits are made to order. Tell me what you want — species, baits, quantities, colors — and I&apos;ll come back with a price and a turnaround time. Bulk and dealer pricing on request.</p>
 
+          <!-- BEGIN:REACH -->
           <div class="reach">
-            <a class="reach-row" id="reachEmail" href="#">
+            <a class="reach-row" href="mailto:gilbertsenthomas00@gmail.com?subject=T%26J%27s%20Tackle%20%E2%80%94%20Order%20Request">
               <span class="reach-ico" aria-hidden="true">✉</span>
-              <span class="reach-txt"><b>Email — fastest</b><span id="reachEmailAddr"></span></span>
+              <span class="reach-txt"><b>Email — fastest</b><span>gilbertsenthomas00@gmail.com</span></span>
             </a>
             <button type="button" class="reach-row as-btn" id="copyEmail">
               <span class="reach-ico" aria-hidden="true">⧉</span>
               <span class="reach-txt"><b>Copy my email</b><span id="copyState">Tap to copy the address</span></span>
             </button>
-            <a class="reach-row" id="reachText" href="#" hidden>
+            <a class="reach-row" href="sms:+18638126504?&body=Hey%20Thomas%20%E2%80%94%20saw%20the%20T%26J%27s%20Tackle%20site.%20I%27d%20like%20to%20order%20">
               <span class="reach-ico" aria-hidden="true">✦</span>
-              <span class="reach-txt"><b>Text me — quickest</b><span id="reachTextNum"></span></span>
+              <span class="reach-txt"><b>Text me — quickest</b><span>863-812-6504</span></span>
             </a>
-            <a class="reach-row" id="reachCall" href="#" hidden>
+            <a class="reach-row" href="tel:+18638126504">
               <span class="reach-ico" aria-hidden="true">✆</span>
-              <span class="reach-txt"><b>Call</b><span id="reachCallNum"></span></span>
+              <span class="reach-txt"><b>Call</b><span>863-812-6504</span></span>
             </a>
             <a class="reach-row" href="tj-tackle-contact.vcf" download>
               <span class="reach-ico" aria-hidden="true">⇩</span>
               <span class="reach-txt"><b>Save my contact</b><span>Adds T&amp;J&apos;s Tackle to your phone</span></span>
             </a>
           </div>
+          <!-- END:REACH -->
 
           <p class="reach-note">Orders, wholesale, custom colors, pro staff — it all comes straight to me at the one address and the one number above, so nothing gets lost.</p>
 
@@ -623,33 +625,13 @@
   };
   // END:CONTACT_JS
 
-  const telHref = (p) => "+1" + p.replace(/\D/g, "");
-
-  (function wireReach() {
-    const mail = document.getElementById("reachEmail");
-    mail.href = "mailto:" + CONTACT.email + "?subject=" +
-      encodeURIComponent(CONTACT.company + " — Order Request");
-    document.getElementById("reachEmailAddr").textContent = CONTACT.email;
-    document.getElementById("fbAddr").textContent = CONTACT.email;
-
-    if (CONTACT.phone) {
-      const num = telHref(CONTACT.phone);
-
-      const text = document.getElementById("reachText");
-      // "?&body=" is the form iOS and Android both accept.
-      text.href = "sms:" + num + "?&body=" +
-        encodeURIComponent("Hey Thomas — saw the T&J's Tackle site. I'd like to order ");
-      document.getElementById("reachTextNum").textContent = CONTACT.phone;
-      text.hidden = false;
-
-      const call = document.getElementById("reachCall");
-      call.href = "tel:" + num;
-      document.getElementById("reachCallNum").textContent = CONTACT.phone;
-      call.hidden = false;
-    }
-
+  // The contact rows (address, number, hrefs) are rendered into the HTML at
+  // build time, so they work with scripts off. This only adds the copy button.
+  (function wireCopy() {
     const btn = document.getElementById("copyEmail");
     const state = document.getElementById("copyState");
+    if (!btn || !state) return;
+    const idle = state.textContent;
     btn.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(CONTACT.email);
@@ -657,9 +639,11 @@
       } catch {
         state.textContent = CONTACT.email;
       }
-      setTimeout(() => { state.textContent = "Tap to copy the address"; }, 4000);
+      setTimeout(() => { state.textContent = idle; }, 4000);
     });
   })();
+
+  document.getElementById("fbAddr").textContent = CONTACT.email;
 
   // Order form -> a fully written email, opened in whatever mail app they use.
   document.getElementById("cform").addEventListener("submit", (e) => {

@@ -278,6 +278,43 @@ def write_business_cards(site_svg: str) -> Path:
     return out
 
 
+def reach_rows_html() -> str:
+    """The contact rows, with real values baked in.
+
+    These used to be filled in by JavaScript, which meant the address and
+    number were absent from the page source — invisible to anything that does
+    not run scripts. Rendering them here makes the page work with JS off; the
+    script only adds the copy-to-clipboard convenience on top.
+    """
+    mailto = f"mailto:{EMAIL}?subject={quote(ORDER_SUBJECT)}"
+    rows = [
+        (mailto, "\u2709", "Email — fastest", EMAIL, ""),
+        ("#", "\u29c9", "Copy my email", "Tap to copy the address", ' id="copyEmail"'),
+    ]
+    if PHONE:
+        num = tel_href(PHONE)
+        sms_body = quote("Hey Thomas — saw the T&J's Tackle site. I'd like to order ")
+        rows.append((f"sms:{num}?&body={sms_body}", "\u2726", "Text me — quickest", PHONE, ""))
+        rows.append((f"tel:{num}", "\u2706", "Call", PHONE, ""))
+    rows.append(("tj-tackle-contact.vcf", "\u21e9", "Save my contact",
+                 "Adds T&amp;J&apos;s Tackle to your phone", ' download'))
+
+    out = ['          <div class="reach">']
+    for href, ico, label, sub, extra in rows:
+        tag = "button" if "copyEmail" in extra else "a"
+        attrs = (f'type="button" class="reach-row as-btn"{extra}' if tag == "button"
+                 else f'class="reach-row" href="{href}"{extra}')
+        sub_id = ' id="copyState"' if "copyEmail" in extra else ""
+        out.append(
+            f'            <{tag} {attrs}>\n'
+            f'              <span class="reach-ico" aria-hidden="true">{ico}</span>\n'
+            f'              <span class="reach-txt"><b>{label}</b>'
+            f'<span{sub_id}>{sub}</span></span>\n'
+            f'            </{tag}>')
+    out.append('          </div>')
+    return "\n".join(out)
+
+
 # ------------------------------------------------- patch site/index.html --
 def patch_site(email_svg: str) -> Path:
     """Keep the live page's contact config and QR in step with contact.json."""
@@ -297,13 +334,17 @@ def patch_site(email_svg: str) -> Path:
     html, n1 = re.subn(r"  // BEGIN:CONTACT_JS.*?  // END:CONTACT_JS",
                        lambda _m: cfg_js, html, flags=re.S)
 
+    reach = f"<!-- BEGIN:REACH -->\n{reach_rows_html()}\n          <!-- END:REACH -->"
+    html, n3 = re.subn(r"<!-- BEGIN:REACH -->.*?<!-- END:REACH -->",
+                       lambda _m: reach, html, flags=re.S)
+
     qr = f"<!-- BEGIN:QR_EMAIL -->{email_svg}<!-- END:QR_EMAIL -->"
     html, n2 = re.subn(r"<!-- BEGIN:QR_EMAIL -->.*?<!-- END:QR_EMAIL -->",
                        lambda _m: qr, html, flags=re.S)
 
-    if not (n1 and n2):
+    if not (n1 and n2 and n3):
         raise SystemExit(
-            f"site/index.html is missing a marker (CONTACT_JS={n1}, QR_EMAIL={n2}) — "
+            f"site/index.html is missing a marker (CONTACT_JS={n1}, QR_EMAIL={n2}, REACH={n3}) — "
             "re-add it before running this script.")
     path.write_text(html, encoding="utf-8")
     return path
