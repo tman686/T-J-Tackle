@@ -1,0 +1,17 @@
+{
+  "name": "@jt/pricing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Unit-economics & pricing engine for T&J's Tackle — cost-per-bait, margins, retail/wholesale pricing, and break-even.",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "node --import tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.5.4"
+  }
+}

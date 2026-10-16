@@ -1,0 +1,506 @@
+// T&J's Tackle — canonical data model
+// Manufacturing-first: the catalog is a view over engineering + production data.
+//
+// This schema is the Phase 1 backbone. It is validated in CI (`prisma validate`).
+// Wiring a live Postgres instance + migrations is a Phase 2 task (see ROADMAP.md).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Runtime uses the Supabase pooled connection (pgBouncer, port 6543).
+  url = env("DATABASE_URL")
+  // Migrations use a direct connection (port 5432). On Supabase, set this to
+  // the "Direct connection" string; locally it can equal DATABASE_URL.
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum WaterType {
+  FRESHWATER
+  SALTWATER
+  BOTH
+}
+
+enum LifecycleStage {
+  IDEA
+  SKETCH
+  CAD
+  SIMULATION
+  PROTOTYPE_MOLD
+  PROTOTYPE_INJECTION
+  TANK_TESTING
+  FIELD_TESTING
+  ENGINEERING_REVIEW
+  PILOT_PRODUCTION
+  PRODUCTION
+  CONTINUOUS_IMPROVEMENT
+  RETIRED
+}
+
+enum BuoyancyClass {
+  FLOATING
+  SLOW_SINK
+  NEUTRAL
+  FAST_SINK
+}
+
+enum MoldStatus {
+  DESIGN
+  IN_PRODUCTION
+  MAINTENANCE
+  RETIRED
+}
+
+enum BatchStatus {
+  QUEUED
+  IN_PRODUCTION
+  QC_PENDING
+  PASSED
+  FAILED
+  PACKAGED
+  FINISHED
+}
+
+enum InventoryCategory {
+  RAW_PLASTISOL
+  PIGMENT
+  GLITTER
+  HOOK
+  BAG
+  LABEL
+  BOX
+  MOLD
+  PACKAGING
+  TOOL
+  FINISHED_GOOD
+  DAMAGED_GOOD
+  RETURN
+}
+
+enum OrderStatus {
+  CART
+  PENDING
+  PAID
+  FULFILLING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+// ---------------------------------------------------------------------------
+// Product taxonomy (design language)
+// ---------------------------------------------------------------------------
+
+/// Product families: Forge, Drift, Current, Phantom, Leviathan, Apex ...
+model ProductFamily {
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g. "APEX", "FORGE"
+  name        String
+  positioning String? // e.g. "Power fishing, heavy cover, big fish"
+  lures       Lure[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// A lure design. SKU + Shape-DNA drive naming: JT-<Category>-<Family>-G<gen>-V<rev>
+model Lure {
+  id         String  @id @default(cuid())
+  sku        String  @unique
+  shapeDna   String  @unique // e.g. "JT-CRW-APEX-G2-V4"
+  name       String
+  category   String // Craw, Worm, Swimbait, Creature, Shad, Minnow ...
+  generation Int     @default(1)
+  revision   Int     @default(1)
+
+  family   ProductFamily @relation(fields: [familyId], references: [id])
+  familyId String
+
+  // Engineering / manufacturing linkage
+  cadVersion String?
+  mold       Mold?              @relation(fields: [moldId], references: [id])
+  moldId     String?
+  formula    PlastisolFormula?  @relation(fields: [formulaId], references: [id])
+  formulaId  String?
+
+  // Physical / performance characteristics
+  lengthInches   Float?
+  weightGrams    Float?
+  density        Float?
+  buoyancy       BuoyancyClass @default(SLOW_SINK)
+  sinkRateInSec  Float? // inches per second (engineering estimate)
+  durability     Int? // 1-10
+  elasticity     Int? // 1-10
+
+  // Fishing context
+  waterType      WaterType @default(FRESHWATER)
+  targetSpecies  String[] // ["Largemouth Bass", "Smallmouth Bass"]
+  waterClarity   String[] // ["Clear", "Stained", "Muddy"]
+  seasons        String[] // ["Spring", "Summer", ...]
+  depthRange     String? // e.g. "0-15 ft"
+  retrieveStyles String[]
+
+  // Recommended gear
+  hookRecommendation String?
+  riggingMethods     String[]
+  recommendedLine    String?
+  recommendedRod     String?
+
+  // Action lab (measured, refined by testing)
+  action ActionProfile?
+
+  // Commerce
+  variants ProductVariant[]
+  reviews  Review[]
+
+  // R&D / lifecycle
+  stage      LifecycleStage @default(PRODUCTION)
+  prototypes Prototype[]
+  fieldNotes FieldNote[]
+  catchReports CatchReport[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([familyId])
+}
+
+/// Measurable action characteristics instead of subjective descriptions.
+model ActionProfile {
+  id                   String @id @default(cuid())
+  lure                 Lure   @relation(fields: [lureId], references: [id])
+  lureId               String @unique
+  tailFrequencyHz      Float?
+  kickAngleDeg         Float?
+  bodyRoll             Float?
+  flashIndex           Float?
+  glideDistanceInches  Float?
+  fallRateInPerSec     Float?
+  flutterRate          Float?
+  vibration            Float?
+  dragCoefficient      Float?
+  hydrodynamicStability Float?
+}
+
+// ---------------------------------------------------------------------------
+// Mold lifecycle
+// ---------------------------------------------------------------------------
+
+model Mold {
+  id            String     @id @default(cuid())
+  moldId        String     @unique // "JT-MOLD-00001"
+  name          String
+  status        MoldStatus @default(DESIGN)
+  manufacturer  String?
+  material      String? // e.g. "6061 Aluminum"
+  aluminumGrade String?
+  cavities      Int        @default(1)
+
+  // Files (URIs to a DAM / object store — Phase 6)
+  cadFileUrl  String?
+  stepFileUrl String?
+  stlFileUrl  String?
+  camFileUrl  String?
+
+  // Approved process window
+  injectionTempC   Float?
+  injectionPressure Float?
+  coolingTimeSec   Float?
+
+  // Lifecycle metrics
+  shotsProduced   Int   @default(0)
+  expectedLife    Int? // shots
+  currentLifePct  Float?
+  avgCycleTimeSec Float?
+  replacementCost Float?
+  storageLocation String?
+
+  maintenanceLogs MoldMaintenance[]
+  lures           Lure[]
+  batches         ProductionBatch[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MoldMaintenance {
+  id        String   @id @default(cuid())
+  mold      Mold     @relation(fields: [moldId], references: [id])
+  moldId    String
+  date      DateTime @default(now())
+  type      String // "Polish", "Repair", "Inspection"
+  notes     String?
+  cost      Float?
+  performedBy String?
+}
+
+// ---------------------------------------------------------------------------
+// Plastisol formula & color
+// ---------------------------------------------------------------------------
+
+/// Composable formula families: F(loating) D(urable) S(alted) E(xtra-soft) X(-stretch)
+model PlastisolFormula {
+  id            String   @id @default(cuid())
+  code          String   @unique // e.g. "F-D-S-2"
+  name          String
+  hardness      Int? // shore
+  softenerRatio Float?
+  saltPercent   Float?
+  scent         String?
+  uvAdditive    Boolean  @default(false)
+  density       Float?
+  stretchRating Int? // 1-10
+  floatingRating Int? // 1-10
+  shelfLifeDays Int?
+  injectionTempC Float?
+  coolingTimeSec Float?
+  costPerBait   Float?
+  notes         String?
+  revisions     Json? // revision history
+  lures         Lure[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/// Structured color: internal code + marketing name. GP-001 → "Marsh Goblin"
+model Color {
+  id            String  @id @default(cuid())
+  code          String  @unique // "GP-003"
+  marketingName String // "Marsh Goblin"
+  family        String // "Green Pumpkin", "Watermelon", "Chartreuse" ...
+  hex           String?
+  rgb           String?
+  cmyk          String?
+  pantone       String?
+
+  pigmentFormula String?
+  pearlFormula   String?
+  glitterBlend   String?
+  uvAdditive     Boolean @default(false)
+  glowAdditive   Boolean @default(false)
+
+  // Water-condition performance ratings (1-10)
+  clearWaterRating  Int?
+  stainedWaterRating Int?
+  muddyWaterRating  Int?
+  nightRating       Int?
+
+  variants  ProductVariant[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Commerce layer over the catalog
+// ---------------------------------------------------------------------------
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  sku       String  @unique
+  lure      Lure    @relation(fields: [lureId], references: [id])
+  lureId    String
+  color     Color?  @relation(fields: [colorId], references: [id])
+  colorId   String?
+  countPerBag Int   @default(8)
+  priceCents Int
+  active    Boolean @default(true)
+
+  inventory InventoryItem?
+  orderLines OrderLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lureId])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  orders    Order[]
+  reviews   Review[]
+  catches   CatchReport[]
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  number     String      @unique
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  customerId String
+  status     OrderStatus @default(PENDING)
+  subtotalCents Int      @default(0)
+  shippingCents Int      @default(0)
+  totalCents Int         @default(0)
+  lines      OrderLine[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model OrderLine {
+  id        String         @id @default(cuid())
+  order     Order          @relation(fields: [orderId], references: [id])
+  orderId   String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  variantId String
+  quantity  Int            @default(1)
+  priceCents Int
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  lure       Lure     @relation(fields: [lureId], references: [id])
+  lureId     String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId String
+  rating     Int // 1-5
+  title      String?
+  body       String?
+  createdAt  DateTime @default(now())
+
+  @@index([lureId])
+}
+
+// ---------------------------------------------------------------------------
+// Manufacturing & quality
+// ---------------------------------------------------------------------------
+
+model ProductionBatch {
+  id            String      @id @default(cuid())
+  batchId       String      @unique // "JT-BATCH-2026-0001"
+  mold          Mold        @relation(fields: [moldId], references: [id])
+  moldId        String
+  status        BatchStatus @default(QUEUED)
+  quantity      Int         @default(0)
+  rejectQuantity Int        @default(0)
+  operator      String?
+  injectionTempC Float?
+  cycleTimeSec  Float?
+  qualityChecks QualityCheck[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model QualityCheck {
+  id            String          @id @default(cuid())
+  batch         ProductionBatch @relation(fields: [batchId], references: [id])
+  batchId       String
+  inspector     String?
+  visualPass    Boolean?
+  dimensionPass Boolean?
+  weightPass    Boolean?
+  floatPass     Boolean?
+  sinkPass      Boolean?
+  hookAlignPass Boolean?
+  qualityScore  Int? // 0-100
+  photoUrls     String[]
+  notes         String?
+  createdAt     DateTime        @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Inventory & supply
+// ---------------------------------------------------------------------------
+
+model InventoryItem {
+  id            String            @id @default(cuid())
+  sku           String            @unique
+  name          String
+  category      InventoryCategory
+  quantityOnHand Int              @default(0)
+  reorderPoint  Int               @default(0)
+  unitCostCents Int?
+  location      String?
+
+  // Optional link to a sellable variant (finished goods)
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId String?         @unique
+
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+  supplierId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+model Supplier {
+  id            String  @id @default(cuid())
+  name          String
+  country       String?
+  leadTimeDays  Int?
+  moq           Int?
+  qualityRating Int? // 1-10
+  riskScore     Int? // 1-100
+  items         InventoryItem[]
+  createdAt     DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// R&D and proprietary data advantage
+// ---------------------------------------------------------------------------
+
+model Prototype {
+  id            String         @id @default(cuid())
+  prototypeId   String         @unique // "JT-PROT-00001"
+  name          String
+  designer      String?
+  stage         LifecycleStage @default(SKETCH)
+  cadVersion    String?
+  approvalStatus String        @default("PENDING")
+  revisionNotes String?
+  patentNotes   String?
+
+  lure   Lure?   @relation(fields: [lureId], references: [id])
+  lureId String?
+
+  fieldNotes FieldNote[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+/// Voluntary angler catch reports → proprietary fishing-performance database.
+model CatchReport {
+  id           String   @id @default(cuid())
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  customerId   String?
+  lure         Lure?    @relation(fields: [lureId], references: [id])
+  lureId       String?
+  species      String?
+  lengthInches Float?
+  weightLbs    Float?
+  waterTempF   Float?
+  waterClarity String?
+  depthFt      Float?
+  region       String? // general region only (privacy-respecting)
+  weather      String?
+  season       String?
+  colorCode    String?
+  photoUrls    String[]
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  @@index([species])
+  @@index([lureId])
+}
+
+/// Field notes attached to a lure or prototype from testing.
+model FieldNote {
+  id          String     @id @default(cuid())
+  lure        Lure?      @relation(fields: [lureId], references: [id])
+  lureId      String?
+  prototype   Prototype? @relation(fields: [prototypeId], references: [id])
+  prototypeId String?
+  author      String?
+  body        String
+  createdAt   DateTime   @default(now())
+}

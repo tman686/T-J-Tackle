@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=64", "pybind11>=2.10"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "megalodon"
+version = "0.1.0"
+description = "Megalodon — a Python application over a compiled C++ core, with a pluggable CogniPrime integration."
+requires-python = ">=3.9"
+readme = "README.md"
+
+[project.scripts]
+megalodon = "megalodon.app:main"
+
+[tool.setuptools.packages.find]
+where = ["python"]
